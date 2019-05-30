@@ -99,38 +99,47 @@ controller.hears(['food truck', 'trucks'], ['direct_message','mention', 'direct_
 
     var dayOfWeek = new Date().toLocaleString('en-us', {  weekday: 'long' });
 
-    request({
-        method: 'GET',
-        url: 'https://www.boston.gov/departments/small-business-development/city-boston-food-trucks-schedule'
-    }, (err, res, body) => {
+    if (dayOfWeek !== 'Saturday' && dayOfWeek !== "Sunday") {
+        request({
+            method: 'GET',
+            url: 'https://www.boston.gov/departments/small-business-development/city-boston-food-trucks-schedule'
+        }, (err, res, body) => {
 
-        if (err) return console.error(err);
+            if (err) return console.error(err);
 
-        let $ = cheerio.load(body);
+            let $ = cheerio.load(body);
 
-        var trucks = [];
-        var places = [];
-        //dayOfWeek = 'Saturday';
-        $('div.dr').each(function(i, element){
-          var a = $(this).prev();
-          if (a.text().includes('Downtown')) {
-             a.find('p.supporting-text > a').each(function(i, element){
-                 var place = $(this);
-                 places.push(place.text());
-             });
-            a.find('td[data-label~="'+ dayOfWeek + '"]').each(function(i,element) {
-                var truck = $(this);
-                trucks.push(truck.text());
+            var trucks = [];
+            var places = [];
+            var times = [];
+
+            $('div.dr').each(function(i, element){
+              var a = $(this).prev();
+              if (a.text().includes('Downtown')) {
+                a.find('p.supporting-text > a').each(function(i, element){
+                    var place = $(this);
+                    places.push(place.text());
+                });
+                a.find('td[data-label="Time period"]').each(function(i,element) {
+                    var time = $(this);
+                    times.push(time.text());
+                });
+                a.find('td[data-label~="'+ dayOfWeek + '"]').each(function(i,element) {
+                    var truck = $(this);
+                    trucks.push(truck.text());
+                });
+              }
             });
-          }
-        });
 
-        bot.reply(message, 'I have come back from the forest moon of Endor to tell you the food trucks for today:');
-        for (var i = 0; i < places.length; i++) {
-            bot.reply(message, '*' + places[i] + ':*');
-            bot.reply(message, trucks[i]);
-        }
-    });
+            bot.reply(message, 'I have come from the forest moon of Endor to tell you the food trucks for today:');
+            for (var i = 0; i < places.length; i++) {
+                bot.reply(message, '*' + places[i] + ' [_'+ times[i] +'_]:*');
+                bot.reply(message, trucks[i]);
+            }
+        });
+    } else {
+        bot.reply(message, 'Sorry, the Snackbar is closed on the weekends.');
+    }
 });
 
 /**
