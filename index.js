@@ -8,6 +8,9 @@
  * With custom integrations, we don't have a way to find out who installed us, so we can't message them :(
  */
 
+const cheerio = require('cheerio');
+const request = require('request');
+
 function onInstallation(bot, installer) {
     if (installer) {
         bot.startPrivateConversation({user: installer}, function (err, convo) {
@@ -20,7 +23,6 @@ function onInstallation(bot, installer) {
         });
     }
 }
-
 
 /**
  * Configure the persistence options
@@ -82,13 +84,54 @@ controller.on('rtm_close', function (bot) {
 // BEGIN EDITING HERE!
 
 controller.on('bot_channel_join', function (bot, message) {
-    bot.reply(message, "I'm here!")
+    bot.reply(message, "I have arrived from Mon Cala to tell you where the food trucks are!")
 });
 
-controller.hears('hello', 'direct_message', function (bot, message) {
-    bot.reply(message, 'Hello!');
+controller.hears('star destroyers', 'direct_message', function (bot, message) {
+    bot.reply(message, 'It\'s a trap!');
 });
 
+controller.hears(['The Last Jedi','the last jedi', 'tlj', 'TLJ', 'died', 'dead'], ['direct_message','direct_mention'], function (bot, message) {
+    bot.reply(message, 'Okay, I know I got sucked out into space, but do you really think of The Last Jedi when you think of Admiral Ackbar?  No.  You think of Return of the Jedi and the dumb memes.');
+});
+
+controller.hears(['food truck', 'trucks'], ['direct_message','mention', 'direct_mention'], function (bot, message) {
+
+    var dayOfWeek = new Date().toLocaleString('en-us', {  weekday: 'long' });
+
+    request({
+        method: 'GET',
+        url: 'https://www.boston.gov/departments/small-business-development/city-boston-food-trucks-schedule'
+    }, (err, res, body) => {
+
+        if (err) return console.error(err);
+
+        let $ = cheerio.load(body);
+
+        var trucks = [];
+        var places = [];
+        //dayOfWeek = 'Saturday';
+        $('div.dr').each(function(i, element){
+          var a = $(this).prev();
+          if (a.text().includes('Downtown')) {
+             a.find('p.supporting-text > a').each(function(i, element){
+                 var place = $(this);
+                 places.push(place.text());
+             });
+            a.find('td[data-label~="'+ dayOfWeek + '"]').each(function(i,element) {
+                var truck = $(this);
+                trucks.push(truck.text());
+            });
+          }
+        });
+
+        bot.reply(message, 'I have come back from the forest moon of Endor to tell you the food trucks for today:');
+        for (var i = 0; i < places.length; i++) {
+            bot.reply(message, '*' + places[i] + ':*');
+            bot.reply(message, trucks[i]);
+        }
+    });
+});
 
 /**
  * AN example of what could be:
