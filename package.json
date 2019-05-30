@@ -26,6 +26,7 @@
   "dependencies": {
     "botkit": "0.2.2",
     "botkit-storage-mongo": "^1.0.2",
+    "cheerio": "^1.0.0-rc.3",
     "mongodb": "^1.4.39"
   }
 }
